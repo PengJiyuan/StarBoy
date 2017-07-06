@@ -69,6 +69,7 @@
 
   Magic.prototype = {
 
+    // 得到所有需要显示文字的像素信息
     getTextData: function(text) {
       var _this = this;
       this.texts.forEach(function(item, i) {
@@ -84,12 +85,17 @@
       });
     },
 
+    // 得到文字的像素信息。
+    // 每个像素点用data来表示的话，data是一个包含四个元素的数组。
+    // rgba = 'rgba(' + data[0] + ', ' + data[1] +', ' + data[2] + ', ' + (data[3] / 255) + ')';
+    // 因此我们通过data[3]是否大于0来判断该像素点是否有显示像素, (大于0表示不透明，即存在像素)
     getPixelData: function() {
       this.stars = [];
+      // 每隔3个像素记录一次，不然像素点太密集，没颗粒感。
       for (var w = 0; w < this.width; w += 3) {
         for (var h = 0; h < this.height; h += 3) {
           var index = (w + h * (this.width)) * 4
-          if (this.imgData.data[index] > 1) {
+          if (this.imgData.data[index] > 0) {
             this.stars.push([w, h]);
           }
         }
@@ -100,37 +106,41 @@
       return this.allstars;
     },
 
+    // 提前在画布上放置一定数目的点，这里我们预置1600个就足够。
+    // 预置的粒子初始透明度都置为0。
     drawHolders: function() {
       for(var i = 0; i < holderCount; i ++) {
         stars[i] = new StarBoy();
-        var x = i % 2 === 0 ? i : i - 1;
-        stars[i].draw(x, 50);
-        stars[i].setXY(x, 50);
+        // var x = i % 2 === 0 ? i : i - 1;
+        stars[i].draw(400, 60);
+        stars[i].setXY(400, 60);
         holdersPos.push({
-          x: x,
-          y: 50
+          x: 400,
+          y: 60
         });
       }
     }
   }
 
   function StarBoy() {
-    this.starColor = '226,225,142';
-    this.r = 1;
-    this.fadingOut = false;
-    this.fadingIn = true;
-    this.opacity = 0;
-    this.opacityTresh = 0.5;
-    this.do = 0.01;
+    this.starColor = '226,225,142'; // 粒子颜色
+    this.r = 1; // 粒子半径
+    this.fadingOut = false; // 是否进行fadeOut函数
+    this.fadingIn = true; // 是否进行fadeIn函数
+    this.opacity = 0; // 粒子透明度
+    this.opacityTresh = 0.6; // 粒子最大透明度
+    this.do = 0.01; // 透明度变化速率
   }
 
   StarBoy.prototype = {
 
+    // 设置star实例内部x, y
     setXY: function(x, y) {
       this.x = x;
       this.y = y;
     },
 
+    // star进行fadeIn，透明度渐增
     fadeIn: function() {
       if(this.fadingIn) {
         this.fadingIn = this.opacity > this.opacityTresh ? false : true;
@@ -138,6 +148,7 @@
       }
     },
 
+    // star进行fadeIn，透明度渐减
     fadeOut: function() {
       if(!this.fadingOut) {
         this.fadingOut = this.opacity < 0 ? true : false;
@@ -145,6 +156,7 @@
       }
     },
 
+    // 绘制粒子
     draw: function() {
       ctx.beginPath();
       ctx.fillStyle = 'rgba(' + this.starColor + ',' + this.opacity + ')';
@@ -153,8 +165,10 @@
       ctx.fill();
     },
 
+    // 对粒子位置进行变换
     move: function(point, length, index) {
       this.fadeIn();
+      // 计算的到speedX和speedY，以备变换使用。
       this.execSpeed([this.x, this.y], point, length, index);
       if(this.speedX >= 0) {
         if(this.x >= point[0]) {
@@ -184,6 +198,8 @@
       }
     },
 
+    // 通过传入上一个点和下一个点的位置来计算x轴和y轴的变换速度
+    // 该值一次变换只计算一次，所以用一个flag来限制。
     execSpeed: function(start, end, length, index) {
       if(hasSpeed) {
         return;
@@ -218,6 +234,7 @@
 
   words.forEach(function(w, i) {
     setTimeout(function() {
+      // 在进行下次变换的时候，记得清空上次变换的动画。
       window.cancelAnimationFrame(timer);
       hasSpeed = false;
       draw(data[i], data[i].length);
